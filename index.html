@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MovieFlix — AI Movie Recommendations</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"/>
+  <!-- Google Fonts with display=swap for non-blocking load -->
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'"/>
+  <style>
+    /* Fallback fonts in case Google Fonts fails to load */
+    :root {
+      --font-display: 'Bebas Neue', 'Arial Black', 'Impact', sans-serif;
+      --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══ LOADING SCREEN ══════════════════════════════════════════════════════ -->
+<div id="loader">
+  <div class="loader-logo">MOVIEFLIX</div>
+  <div class="loader-bar"><div class="loader-fill"></div></div>
+</div>
+
+<!-- ══ NAVBAR ═════════════════════════════════════════════════════════════ -->
+<nav class="navbar" id="navbar">
+  <div class="nav-logo">MOVIEFLIX</div>
+  <div class="nav-links">
+    <a href="#" class="nav-link active" onclick="scrollToSection('trending')">Trending</a>
+    <a href="#" class="nav-link" onclick="scrollToSection('action')">Action</a>
+    <a href="#" class="nav-link" onclick="scrollToSection('drama')">Drama</a>
+    <a href="#" class="nav-link" onclick="scrollToSection('scifi')">Sci-Fi</a>
+    <a href="#" class="nav-link" onclick="showMyList()">My List</a>
+  </div>
+  <div class="nav-right">
+    <div class="search-wrapper">
+      <input type="text" id="searchInput" class="search-input" placeholder="Search movies, cast, genres..."/>
+      <button class="search-btn" onclick="performSearch()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </button>
+    </div>
+    <div class="nav-avatar">MF</div>
+  </div>
+</nav>
+
+<!-- ══ HERO BANNER ════════════════════════════════════════════════════════ -->
+<section class="hero" id="hero">
+  <div class="hero-bg" id="heroBg"></div>
+  <div class="hero-overlay"></div>
+  <div class="hero-content">
+    <div class="hero-badge">🔥 Featured</div>
+    <h1 class="hero-title" id="heroTitle">The Dark Knight</h1>
+    <div class="hero-meta">
+      <span class="hero-year" id="heroYear">2008</span>
+      <span class="hero-rating">
+        <svg viewBox="0 0 24 24" fill="#E50914" width="16" height="16"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        <span id="heroRating">9.0</span>
+      </span>
+      <span class="hero-genres" id="heroGenres">Action • Crime • Drama</span>
+    </div>
+    <p class="hero-overview" id="heroOverview">Batman faces the Joker, a criminal mastermind who wants to plunge Gotham City into anarchy and chaos.</p>
+    <div class="hero-buttons">
+      <button class="btn-play" id="heroPlayBtn">
+        <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        Play Now
+      </button>
+      <button class="btn-info" id="heroInfoBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        More Info
+      </button>
+      <button class="btn-list" id="heroListBtn" onclick="toggleMyList(this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        My List
+      </button>
+    </div>
+  </div>
+  <div class="hero-scroll-hint">
+    <span>Scroll to explore</span>
+    <div class="scroll-arrow"></div>
+  </div>
+</section>
+
+<!-- ══ MAIN CONTENT ═══════════════════════════════════════════════════════ -->
+<main class="main-content">
+
+  <!-- Search Results -->
+  <section class="content-section hidden" id="searchResults">
+    <div class="section-header">
+      <h2 class="section-title">Search Results <span id="searchQuery" class="query-badge"></span></h2>
+      <button class="clear-search" onclick="clearSearch()">✕ Clear</button>
+    </div>
+    <div class="movie-grid" id="searchGrid"></div>
+    <div class="no-results hidden" id="noResults">
+      <div class="no-results-icon">🎬</div>
+      <p>No movies found for your search.</p>
+      <p class="no-results-sub">Try different keywords or browse our collection below.</p>
+    </div>
+  </section>
+
+  <!-- Recommendations -->
+  <section class="content-section hidden" id="recommendSection">
+    <div class="section-header">
+      <h2 class="section-title">
+        <span class="ai-badge">AI</span>
+        Because you watched <span id="recommendSource" class="highlight"></span>
+      </h2>
+      <button class="close-recs" onclick="closeRecommendations()">✕</button>
+    </div>
+    <div class="movie-row" id="recommendRow"></div>
+  </section>
+
+  <!-- Trending -->
+  <section class="content-section" id="trending">
+    <div class="section-header">
+      <h2 class="section-title">🔥 Trending Now</h2>
+      <button class="see-all-btn" onclick="loadAllTrending()">See All</button>
+    </div>
+    <div class="movie-row" id="trendingRow">
+      <div class="row-skeleton"></div>
+    </div>
+  </section>
+
+  <!-- Action -->
+  <section class="content-section" id="action">
+    <div class="section-header">
+      <h2 class="section-title">💥 Action & Adventure</h2>
+    </div>
+    <div class="movie-row" id="actionRow"></div>
+  </section>
+
+  <!-- Drama -->
+  <section class="content-section" id="drama">
+    <div class="section-header">
+      <h2 class="section-title">🎭 Drama</h2>
+    </div>
+    <div class="movie-row" id="dramaRow"></div>
+  </section>
+
+  <!-- Sci-Fi -->
+  <section class="content-section" id="scifi">
+    <div class="section-header">
+      <h2 class="section-title">🚀 Sci-Fi & Fantasy</h2>
+    </div>
+    <div class="movie-row" id="scifiRow"></div>
+  </section>
+
+  <!-- My List -->
+  <section class="content-section hidden" id="myListSection">
+    <div class="section-header">
+      <h2 class="section-title">📋 My List</h2>
+      <button class="close-recs" onclick="closeMyList()">✕</button>
+    </div>
+    <div class="movie-grid" id="myListGrid">
+      <div class="empty-list">
+        <div class="empty-icon">🎬</div>
+        <p>Your list is empty</p>
+        <p class="empty-sub">Click the + button on any movie to add it</p>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ══ MOVIE MODAL ════════════════════════════════════════════════════════ -->
+<div class="modal-overlay hidden" id="movieModal">
+  <div class="modal-content">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div class="modal-hero">
+      <img id="modalPoster" src="" alt="" class="modal-poster"/>
+      <div class="modal-hero-info">
+        <h2 class="modal-title" id="modalTitle"></h2>
+        <div class="modal-meta">
+          <span class="modal-year" id="modalYear"></span>
+          <span class="modal-rating">
+            <svg viewBox="0 0 24 24" fill="#E50914" width="14" height="14"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            <span id="modalRating"></span>
+          </span>
+        </div>
+        <div class="modal-genres" id="modalGenres"></div>
+        <p class="modal-overview" id="modalOverview"></p>
+        <div class="modal-cast">
+          <strong>Cast:</strong> <span id="modalCast"></span>
+        </div>
+        <div class="modal-actions">
+          <button class="btn-play" onclick="playMovie()">▶ Play</button>
+          <button class="btn-list modal-list-btn" id="modalListBtn" onclick="toggleModalList()">+ My List</button>
+          <button class="btn-rec" onclick="getModalRecommendations()">🤖 Similar Movies</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ TOAST ══════════════════════════════════════════════════════════════ -->
+<div class="toast" id="toast"></div>
+
+<script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
